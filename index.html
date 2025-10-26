@@ -1,0 +1,331 @@
+<!-- Mera-Br Pics Farm - single-file HTML/CSS/JS
+     Replace UNSPLASH_API_KEY with your own key in the JS section below.
+     Features:
+     - Splash screen
+     - Neon animated background (random gradient changes)
+     - Search bar (uses Unsplash API) - replace API key
+     - Image grid with neon-glowing per-card buttons
+     - Big hero preview when clicking a thumbnail
+     - Download buttons
+     - Favorite (save to localStorage) and Favorites quick-access
+     - Responsive layout
+
+  Save this as mera-br-pics-farm.html and open in a browser.
+--><!doctype html>
+
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>MERA-BR PICS FARM</title>
+  <style>
+    :root{
+      --card-radius:12px;
+      --glass: rgba(205,25,25,1.04);
+      --muted: rgba(255,55,205,1.7);
+      --accent: #00f0ff;
+      --ui-gap: 18px;
+      font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+    }
+    html,body{height:100%;margin:0;background:#0f0b60;color:#fff}/* neon animated gradient on body - we change with JS for randomness */
+body{transition:background 1s ease;}
+
+/* container */
+.wrap{max-width:620px;margin:40px auto;padding:28px;background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));border-radius:18px;box-shadow:0 8px 40px rgba(0,0,0,1.6);backdrop-filter: blur(6px)}
+
+header{text-align:center;margin-bottom:18px}
+h1{font-size:44px;letter-spacing:4px;margin:6px 0 14px;font-weight:800;color:rgba(255,255,255,0.98)}
+
+/* search */
+.search-row{display:flex;gap:12px;align-items:center;justify-content:center;margin-bottom:22px}
+.search-row input{width:62%;padding:12px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);outline:none;background:rgba(0,0,0,0.35);color:#fff;font-size:20px;box-shadow:0 6px 18px rgba(0,0,0,0.5) inset}
+.btn{padding:10px 16px;border-radius:8px;border:none;cursor:pointer;font-weight:700;box-shadow:0 6px 24px rgba(10,0,0,1.45);}
+
+/* glow styles for neon buttons (will be set inline per-card) */
+.btn--neon{background:rgba(255,255,255,0.04);color:#fff;border:1px solid rgba(255,25,255,1.06)}
+
+/* hero preview */
+.hero{width:100%;height:360px;background:#111;border-radius:12px;overflow:hidden;display:flex;align-items:center;justify-content:center;margin-bottom:22px;border:3px solid rgba(255,255,255,0.04)}
+.hero img{max-width:100%;height:100%;object-fit:stretch}
+
+/* grid */
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+.card{background:var(--glass);border-radius:var(--card-radius);overflow:hidden;padding:8px;border:1px solid rgba(255,255,255,0.04);display:flex;flex-direction:column;align-items:center}
+.thumb{width:100%;height:130px;border-radius:10px;overflow:hidden;margin-bottom:10px}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.card .row{display:flex;gap:10px;align-items:center}
+
+/* small UI */
+.controls{display:flex;gap:12px;align-items:center;justify-content:center;margin-top:8px}
+.favorites-bt{background:#00ffff;border:3px solid rgba(205,25,255,2.1);padding:8px 10px;border-radius:8px;color:var(--muted);cursor:pointer}
+
+footer{margin-top:28px;padding-top:18px;border-top:5px solid rgba(255,255,255,2.03);text-align:center;color:rgba(255,25,255,0.65)}
+
+/* favorites panel */
+.favorites-panel{position:fixed;right:20px;top:20px;width:360px;max-width:calc(100% - 40px);background:linear-gradient(180deg, rgba(55,25,255,1.03), rgba(255,255,255,2.02));padding:12px;border-radius:12px;border:3px solid rgba(25,250,255,2.06);box-shadow:0 20px 60px rgba(0,0,0,2.6);display:none;z-index:60}
+.favorites-panel h3{margin:8px 0}
+.fav-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.fav-item img{width:100%;height:90px;object-fit:cover;border-radius:8px}
+
+/* splash screen */
+.splash{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:9999;background:#0aaa}
+.splash .logo{display:flex;flex-direction:column;align-items:center;gap:14px}
+.splash h2{font-size:40px;letter-spacing:3px}
+.loader{width:92px;height:92px;border-radius:50%;display:grid;place-items:center;border:6px solid rgba(255,255,255,1.06);position:relative}
+.loader::after{content:'Ⓜ';position:absolute;inset:6px;border-radius:50%;animation:spin 5s;border:6px solid rgba(255,205,25,2.04)}
+.pulse{width:20px;height:20px;border-radius:50%;background:#0ceea5;box-shadow:0 0 40px 8px rgba(255,25,255,1.06);animation:spin 2.5s linear infinite}
+@keyframes spin{to{transform:rotate(10turn)}}
+
+/* responsive */
+@media(max-width:960px){.grid{grid-template-columns:repeat(2,1fr)}.search-row input{width:58%}.hero{height:240px}}
+@media(max-width:560px){.grid{grid-template-columns:1fr}.search-row{flex-direction:column}.search-row input{width:100%}.wrap{margin:14px;padding:18px}}
+
+/* tiny hover animation */
+.card:hover{transform:translateY(-6px);transition:transform 220ms cubic-bezier(.2,.9,.3,1)}
+
+/* subtle button */
+.tiny{padding:8px 10px;border-radius:8px;font-size:20px;border:3px solid rgba(25,55,205,2.06);background:#ff00ff;color:#ff0f}
+
+  </style>
+</head>
+<body>  <!-- SPLASH SCREEN -->  <div class="splash" id="splash">
+    <div class="logo">
+      <div class="loader">
+        <div class="pulse"></div>
+      </div>
+      <h2>WELCOME<br>TO<br>🐚MERA-BR PICS FARM🐇</h2>
+      <div style="opacity:0.85">👻Made with ♥ | Preparing the vibes...</div>
+      <button id="enterBtn" class="btn" style="margin-top:10px;padding:8px 14px;border-radius:8px">The Sreen will fade automatically...😜</button>
+    </div>
+  </div>  <div class="wrap" id="app" style="display:none">
+    <header>
+      <h1>🐚MERA-BR PICS FARM🐇</h1><br>
+      <sub><h4><marquee>Try and search for any Pic of your Favorite (e.g Cars,Nature....etc)</marquee></h4></sub>
+      <div class="search-row">
+        <input id="searchInput" placeholder="Search wallpaper (e.g. cat, sunset)" value="Cars" />
+        <button id="searchBtn" class="btn btn--neon">Search</button>
+        <button id="showFav" class="favorites-bt">Favorites</button>
+      </div>
+    </header><div class="hero" id="hero">
+  <!-- Big preview -->
+  <img id="heroImg" src="https://images.unsplash.com/photo-1518791841217-8f162f1e1131?w=1600&q=80&auto=format&fit=crop" alt="hero"/>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<div class="controls">
+  <button id="loadMore" class="tiny"><strong>Load More...</strong></button>
+  <div style="width:14px"></div>
+  <small style="color:var(--muted)"><h3>Tip: click any image to preview — click download to save</h3></small>
+</div>
+
+<footer><h2>
+  Mera-Br system made with love | 2025-26
+</h2></footer>
+
+  </div>  <!-- Favorites panel -->  <div class="favorites-panel" id="favoritesPanel">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <h3>Favorites</h3>
+      <div>
+        <button id="clearFavs" class="tiny">Clear</button>
+        <button id="closeFavs" class="tiny">Close</button>
+      </div>
+    </div>
+    <div id="favList" class="fav-grid" style="margin-top:10px"></div>
+  </div>  <script>
+    // --------- CONFIG: Replace this with your Unsplash API Key ----------
+    const UNSPLASH_KEY = 'XNsfonzhbyeqLXrhfyrGpa3Ahez4vbOElAsBrZJr5pg';
+    // ---------------------------------------------------------------------
+
+    // Simple state
+    let page = 1; let lastQuery = 'Cars';
+
+    // DOM
+    const splash = document.getElementById('splash');
+    const enterBtn = document.getElementById('enterBtn');
+    const app = document.getElementById('app');
+    const searchInput = document.getElementById('searchInput');
+    const searchBtn = document.getElementById('searchBtn');
+    const grid = document.getElementById('grid');
+    const heroImg = document.getElementById('heroImg');
+    const loadMore = document.getElementById('loadMore');
+    const showFav = document.getElementById('showFav');
+    const favoritesPanel = document.getElementById('favoritesPanel');
+    const favList = document.getElementById('favList');
+    const clearFavs = document.getElementById('clearFavs');
+    const closeFavs = document.getElementById('closeFavs');
+
+    // localStorage keys
+    const LS_FAV = 'mera_br_favs_v1';
+
+    // util: generate an attractive neon color
+    function neonColor(){
+      const hues = [200, 260, 330, 180, 20, 300, 120];
+      const h = hues[Math.floor(Math.random()*hues.length)] + Math.floor(Math.random()*30)-15;
+      return `hsl(${h} 100% 55%)`;
+    }
+
+    // apply neon glow to an element using color
+    function applyGlow(el, color){
+      el.style.boxShadow = `0 6px 18px ${color}, 0 0 28px ${color}33`;
+      el.style.border = `1px solid ${color}55`;
+    }
+
+    // set a random-ish neon gradient background for body
+    function randomGradient(){
+      const c1 = neonColor();
+      const c2 = neonColor();
+      const c3 = neonColor();
+      const angle = Math.floor(Math.random()*360);
+      document.body.style.background = `radial-gradient(circle at 10% 20%, ${c1}10 0%, transparent 30%), linear-gradient(${angle}deg, ${c2}10, ${c3}20)`;
+    }
+
+    // Call periodically to keep vibes moving
+    setInterval(randomGradient, 5000);
+    randomGradient();
+
+    // SPLASH behavior - basic: click Enter or timeout to show app
+    enterBtn.addEventListener('click',()=>{openApp()});
+    setTimeout(()=>{ if (splash) openApp(); }, 4500);
+
+    function openApp(){
+      splash.style.display='none';
+      app.style.display='block';
+      loadFromLocalFavs();
+      doSearch(lastQuery);
+    }
+
+    // SEARCH: query Unsplash
+    async function doSearch(query, append=false){
+      if (!query) return;
+      lastQuery = query;
+      if (!UNSPLASH_KEY || UNSPLASH_KEY.includes('REPLACE')){
+        // Show example placeholder grid so you can style and test
+        showPlaceholderGrid();
+        console.warn('Replace UNSPLASH_KEY with your key to fetch real images.');
+        return;
+      }
+
+      const url = `https://api.unsplash.com/search/photos?page=${page}&per_page=12&query=${encodeURIComponent(query)}&client_id=${UNSPLASH_KEY}`;
+      searchBtn.disabled = true; searchBtn.textContent='Searching...';
+      try{
+        const res = await fetch(url);
+        const data = await res.json();
+        const results = data.results || [];
+        if(!append) grid.innerHTML='';
+        results.forEach(r=>renderCard(r));
+        if(results[0] && !append) heroImg.src = results[0].urls.regular + '&w=1400';
+      }catch(err){
+        console.error(err);
+      }finally{
+        searchBtn.disabled=false; searchBtn.textContent='Search';
+      }
+    }
+
+    // Placeholder grid (for design/testing without API key)
+    function showPlaceholderGrid(){
+      grid.innerHTML='';
+      const samples=[
+        'https://images.unsplash.com/photo-1518791841217-8f162f1e1131?w=800&q=60&auto=format&fit=crop',
+        'https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=800&q=60&auto=format&fit=crop',
+        'https://images.unsplash.com/photo-1503023345310-bd7c1de61c7d?w=800&q=60&auto=format&fit=crop',
+        'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=800&q=60&auto=format&fit=crop',
+        'https://images.unsplash.com/photo-1470770903676-69b98201ea1c?w=800&q=60&auto=format&fit=crop',
+        'https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=800&q=60&auto=format&fit=crop',
+        'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=800&q=60&auto=format&fit=crop',
+        'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&q=60&auto=format&fit=crop',
+        'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800&q=60&auto=format&fit=crop'
+      ];
+      samples.forEach((s,i)=>{
+        const card = document.createElement('div'); card.className='card';
+        const th = document.createElement('div'); th.className='thumb';
+        const img = document.createElement('img'); img.src=s; th.appendChild(img);
+        card.appendChild(th);
+
+        const row = document.createElement('div'); row.className='row';
+        const dl = document.createElement('a'); dl.className='btn btn--neon'; dl.textContent='Download'; dl.href=s; dl.setAttribute('download','wall.jpg'); dl.style.textDecoration='none';
+        const fav = document.createElement('button'); fav.className='btn btn--neon'; fav.textContent='♡';
+
+        // unique neon per card
+        const c = neonColor(); applyGlow(dl,c); applyGlow(fav,c);
+
+        row.appendChild(dl); row.appendChild(fav);
+        card.appendChild(row);
+        grid.appendChild(card);
+
+        img.addEventListener('click',()=>{ heroImg.src = s + '&w=1400'; window.scrollTo({top:0,behavior:'smooth'})});
+        fav.addEventListener('click',()=>{addToFav({id:'ph-'+i,url:s});});
+      });
+    }
+
+    // render card from Unsplash result
+    function renderCard(r){
+      const card = document.createElement('div'); card.className='card';
+      const th = document.createElement('div'); th.className='thumb';
+      const img = document.createElement('img'); img.src = r.urls.small; img.alt = r.alt_description || r.description || 'wallpaper'; th.appendChild(img);
+      card.appendChild(th);
+
+      const row = document.createElement('div'); row.className='row';
+      const dl = document.createElement('a'); dl.className='btn btn--neon'; dl.textContent='Download'; dl.href = r.links.download + '?force=true'; dl.setAttribute('download','wallpaper.jpg'); dl.style.textDecoration='none';
+      const fav = document.createElement('button'); fav.className='btn btn--neon'; fav.textContent='♡';
+
+      // per-card neon
+      const color = neonColor(); applyGlow(dl,color); applyGlow(fav,color);
+
+      row.appendChild(dl); row.appendChild(fav);
+      card.appendChild(row);
+      grid.appendChild(card);
+
+      img.addEventListener('click',()=>{ heroImg.src = r.urls.regular + '&w=1400'; window.scrollTo({top:0,behavior:'smooth'})});
+
+      fav.addEventListener('click',()=>{ addToFav({id:r.id, url:r.urls.small, full:r.urls.full, meta:{desc:r.alt_description}}); fav.textContent='♥'; fav.style.transform='scale(1.06)'; setTimeout(()=>fav.style.transform='scale(1)',220); });
+    }
+
+    // favorites management
+    function loadFromLocalFavs(){
+      const raw = localStorage.getItem(LS_FAV);
+      if(!raw) return [];
+      try{return JSON.parse(raw);}catch(e){return []}
+    }
+    function saveLocalFavs(arr){ localStorage.setItem(LS_FAV, JSON.stringify(arr)); }
+
+    function addToFav(item){
+      const cur = loadFromLocalFavs() || [];
+      if(cur.find(x=>x.id===item.id)) return;
+      cur.unshift(item);
+      saveLocalFavs(cur);
+      showMiniToast('Added to favorites');
+    }
+
+    function renderFavPanel(){
+      const cur = loadFromLocalFavs();
+      favList.innerHTML='';
+      if(!cur || cur.length===0){ favList.innerHTML='<div style="color:var(--muted)">No favorites yet</div>'; return; }
+      cur.forEach(it=>{
+        const wrap = document.createElement('div'); wrap.className='fav-item';
+        const im = document.createElement('img'); im.src = it.url || it.full; wrap.appendChild(im);
+        im.addEventListener('click',()=>{ heroImg.src = it.full || it.url; window.scrollTo({top:0,behavior:'smooth'}) });
+        favList.appendChild(wrap);
+      });
+    }
+
+    showFav.addEventListener('click',()=>{ favoritesPanel.style.display = favoritesPanel.style.display==='block' ? 'none' : 'block'; renderFavPanel(); });
+    closeFavs.addEventListener('click',()=>{ favoritesPanel.style.display='none'; });
+    clearFavs.addEventListener('click',()=>{ localStorage.removeItem(LS_FAV); renderFavPanel(); showMiniToast('Favorites cleared'); });
+
+    // search handlers
+    searchBtn.addEventListener('click',()=>{ page=1; grid.innerHTML=''; doSearch(searchInput.value.trim()); });
+    searchInput.addEventListener('keyup',(e)=>{ if(e.key==='Enter'){ searchBtn.click(); } });
+    loadMore.addEventListener('click',()=>{ page++; doSearch(lastQuery,true); });
+
+    // tiny toast
+    function showMiniToast(t){
+      const el = document.createElement('div'); el.textContent=t; el.style.position='fixed'; el.style.left='20px'; el.style.bottom='20px'; el.style.padding='10px 14px'; el.style.borderRadius='10px'; el.style.background='rgba(0,0,0,0.6)'; el.style.border='1px solid rgba(255,255,255,0.06)'; el.style.zIndex=9999; document.body.appendChild(el);
+      setTimeout(()=>{ el.style.transition='opacity 400ms'; el.style.opacity=0; setTimeout(()=>el.remove(),420); },1400);
+    }
+
+    // initial placeholder so UI isn't empty before key is added
+    showPlaceholderGrid();
+
+  </script></body>
+    </html>
